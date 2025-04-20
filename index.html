@@ -1,65 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>My Crypto Wallet</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web3 WalletConnect DApp</title>
+  <!-- Bootstrap CSS for styling -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Web3Modal CSS -->
+  <link href="https://unpkg.com/web3modal@1.9.8/dist/web3modal.css" rel="stylesheet" />
+  <style>
+    body {
+      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
+      color: #fff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 2rem;
+    }
+    
+    .btn-custom {
+      background-color: #1abc9c;
+      border: none;
+      color: #fff;
+    }
+    
+    .btn-custom:hover {
+      background-color: #16a085;
+    }
+    
+    .emoji {
+      font-size: 1.5rem;
+    }
+    
+    .form-control {
+      margin-bottom: 1rem;
+    }
+  </style>
 </head>
+
 <body>
-  <h1>My Crypto Wallet 💼</h1>
-
-  <!-- Create Wallet Section -->
-  <div class="card">
-    <button id="createWalletBtn">
-      <span>Create Wallet</span>
-      <span class="emoji">🔑</span>
+  <div class="container text-center">
+    <h1 class="mb-4">🚀 Web3 WalletConnect DApp</h1>
+    <p>Connect your wallet to interact with the DApp.</p>
+    <button id="connectWallet" class="btn btn-custom btn-lg mt-3">
+      🔗 Connect Wallet
     </button>
-    <p id="newWalletInfo"></p>
+    <div id="walletInfo" class="mt-4"></div>
+    
+    <div id="actions" class="mt-5" style="display: none;">
+      <h2>🛠️ Actions</h2>
+      <button id="createWallet" class="btn btn-custom mt-3">🆕 Create Wallet</button>
+      <div id="newWalletInfo" class="mt-3"></div>
+      
+      <h3 class="mt-4">💸 Send ETH</h3>
+      <input type="text" id="sendTo" class="form-control" placeholder="Recipient Address" />
+      <input type="text" id="sendAmount" class="form-control" placeholder="Amount in ETH" />
+      <button id="sendETH" class="btn btn-custom">📤 Send ETH</button>
+      <div id="sendStatus" class="mt-2"></div>
+      
+      <h3 class="mt-4">🔄 Swap ETH to DAI</h3>
+      <input type="text" id="swapAmount" class="form-control" placeholder="Amount in ETH" />
+      <button id="swapETH" class="btn btn-custom">🔁 Swap</button>
+      <div id="swapStatus" class="mt-2"></div>
+    </div>
   </div>
-
-  <!-- Connect Wallet Section -->
-  <div class="card">
-    <button id="connectWalletBtn">
-      <span>Connect Wallet</span>
-      <span class="emoji">🔗</span>
-    </button>
-    <p id="walletAddress"></p>
-  </div>
-
-  <!-- Send ETH Section -->
-  <div class="card">
-    <h2>Send ETH</h2>
-    <input id="sendTo" placeholder="Recipient Address" />
-    <input id="sendAmount" placeholder="Amount in ETH" />
-    <button id="sendBtn">
-      <span>Send</span>
-      <span class="emoji">💸</span>
-    </button>
-    <p id="sendStatus"></p>
-  </div>
-
-  <!-- Swap ETH to DAI Section -->
-  <div class="card">
-    <h2>Swap ETH → DAI</h2>
-    <input id="swapAmount" placeholder="ETH to Swap" />
-    <button id="swapBtn">
-      <span>Swap</span>
-      <span class="emoji">🔄</span>
-    </button>
-    <p id="swapStatus"></p>
-  </div>
-
-  <!-- Manual Reload Button -->
-  <div class="card">
-    <button id="reloadBtn">
-      <span>Reload Page</span>
-      <span class="emoji">🔄</span>
-    </button>
-  </div>
-
-  <!-- Include Ethers.js from CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
-  <script src="app.js"></script>
+  
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <!-- Web3Modal -->
+  <script src="https://unpkg.com/web3modal@1.9.8/dist/index.js"></script>
+  <!-- WalletConnect Provider -->
+  <script src="https://unpkg.com/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
+  
+  <script>
+    // Initialize Web3Modal
+    const providerOptions = {
+      walletconnect: {
+        package: window.WalletConnectProvider.default,
+        options: {
+          infuraId: "YOUR_INFURA_PROJECT_ID" // Replace with your Infura Project ID
+        }
+      }
+    };
+    
+    const web3Modal = new window.Web3Modal.default({
+      cacheProvider: false,
+      providerOptions
+    });
+    
+    let provider;
+    let signer;
+    
+    document.getElementById("connectWallet").addEventListener("click", async () => {
+      try {
+        provider = await web3Modal.connect();
+        const ethersProvider = new ethers.providers.Web3Provider(provider);
+        signer = ethersProvider.getSigner();
+        const address = await signer.getAddress();
+        document.getElementById("walletInfo").innerHTML = `
+          <p class="emoji">✅ Connected Address:</p>
+          <p>${address}</p>
+        `;
+        document.getElementById("actions").style.display = "block";
+      } catch (error) {
+        console.error("Connection failed:", error);
+        document.getElementById("walletInfo").innerHTML = `
+          <p class="emoji">❌ Connection Failed</p>
+        `;
+      }
+    });
+    
+    // Create Wallet
+    document.getElementById("createWallet").addEventListener("click", async () => {
+      try {
+        const mnemonic = ethers.utils.entropyToMnemonic(ethers.utils.randomBytes(16));
+        const wallet = ethers.Wallet.fromMnemonic(mnemonic);
+        document.getElementById("newWalletInfo").innerText = `Address: ${wallet.address}\nPrivate Key: ${wallet.privateKey}`;
+      } catch (error) {
+        console.error("Wallet creation failed:", error);
+        document.getElementById("newWalletInfo").innerText = "Error creating wallet.";
+      }
+    });
+    
+    // Send ETH
+    document.getElementById("sendETH").addEventListener("click", async () => {
+      const to = document.getElementById("sendTo").value;
+      const amount = document.getElementById("sendAmount").value;
+      try {
+        const tx = await signer.sendTransaction({
+          to,
+          value: ethers.utils.parseEther(amount)
+        });
+        document.getElementById("sendStatus").innerText = `Transaction sent: ${tx.hash}`;
+      } catch (error) {
+        console.error("Transaction failed:", error);
+        document.getElementById("sendStatus").innerText = "Error sending ETH.";
+      }
+    });
+    
+    // Swap ETH to DAI (Note: This is a placeholder. Implementing actual swap functionality requires integration with a DEX like Uniswap.)
+    document.getElementById("swapETH").addEventListener("click", async () => {
+      const amount = document.getElementById("swapAmount").value;
+      try {
+        // Placeholder for swap logic
+        document.getElementById("swapStatus").innerText = `Swapped ${amount} ETH to DAI (simulated).`;
+      } catch (error) {
+        console.error("Swap failed:", error);
+        document.getElementById("swapStatus").innerText = "Error swapping ETH.";
+      }
+    });
+  </script>
 </body>
+
 </html>
