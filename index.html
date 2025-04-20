@@ -3,68 +3,56 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- Automatically reload preview every 1s in SPCK -->
-  <meta http-equiv="refresh" content="1" />
+  <title>My Crypto Wallet</title>
   <link rel="stylesheet" href="style.css" />
-
-  <!-- ethers.js for wallet & blockchain calls -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script> <!-- ethers.js UMD :contentReference[oaicite:6]{index=6} -->
-  <!-- Web3Modal for wallet connections -->
-  <script src="https://cdn.jsdelivr.net/npm/web3modal@1.9.12/dist/index.min.js"></script> <!-- Web3Modal :contentReference[oaicite:7]{index=7} -->
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@1.7.8/dist/umd/index.min.js"></script>
-  <!-- Uniswap V3 SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@uniswap/sdk@3.0.3/dist/index.min.js"></script> <!-- Uniswap SDK :contentReference[oaicite:8]{index=8} -->
-  <!-- QR code generator -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script> <!-- qrcodejs :contentReference[oaicite:9]{index=9} -->
 </head>
 <body>
-  <h1>Crypto Wallet (SPCK Edition)</h1>
+  <h1>My Crypto Wallet 💼</h1>
 
-  <!-- Create Wallet -->
-  <button id="createWalletBtn">Create New Wallet</button>
-  <div id="newWalletInfo"></div>
-
-  <hr>
-
-  <!-- Connect Wallet -->
-  <button id="connectWalletBtn">Connect Wallet</button>
-  <div id="connectedInfo"></div>
-
-  <!-- Receive Section -->
-  <div id="receiveSection" style="display:none;">
-    <h2>Receive Funds</h2>
-    <p id="recvAddress"></p>
-    <div id="recvQr"></div>
+  <!-- Create Wallet Section -->
+  <div class="card">
+    <button id="createWalletBtn">
+      <span>Create Wallet</span>
+      <span class="emoji">🔑</span>
+    </button>
   </div>
 
-  <hr>
+  <!-- Connect Wallet Section -->
+  <div class="card">
+    <button id="connectWalletBtn">
+      <span>Connect Wallet</span>
+      <span class="emoji">🔗</span>
+    </button>
+  </div>
 
-  <!-- Send ETH -->
-  <h2>Send ETH</h2>
-  <input id="sendTo" placeholder="Recipient Address" />
-  <input id="sendAmount" placeholder="Amount in ETH" />
-  <button id="sendBtn">Send</button>
-  <div id="sendStatus"></div>
+  <!-- Send ETH Section -->
+  <div class="card">
+    <h2>Send ETH</h2>
+    <input id="sendTo" placeholder="Recipient Address" />
+    <input id="sendAmount" placeholder="Amount in ETH" />
+    <button id="sendBtn">
+      <span>Send</span>
+      <span class="emoji">💸</span>
+    </button>
+  </div>
 
-  <hr>
+  <!-- Swap ETH to DAI Section -->
+  <div class="card">
+    <h2>Swap ETH → DAI</h2>
+    <input id="swapAmount" placeholder="ETH to Swap" />
+    <button id="swapBtn">
+      <span>Swap</span>
+      <span class="emoji">🔄</span>
+    </button>
+  </div>
 
-  <!-- Swap ETH → DAI -->
-  <h2>Swap ETH → DAI</h2>
-  <input id="swapAmount" placeholder="ETH amount to swap" />
-  <button id="swapBtn">Swap</button>
-  <div id="swapStatus"></div>
-
-  <hr>
-
-  <!-- Transaction History -->
-  <h2>Recent Transactions</h2>
-  <div id="historyList">Loading…</div>
-
-  <hr>
-
-  <!-- Token Balances -->
-  <h2>Token Balances</h2>
-  <div id="tokenBalances">—</div>
+  <!-- Manual Reload Button -->
+  <div class="card">
+    <button id="reloadBtn">
+      <span>Reload Page</span>
+      <span class="emoji">🔄</span>
+    </button>
+  </div>
 
   <script src="app.js"></script>
 </body>
