@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>My Crypto Wallet</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -15,6 +15,7 @@
       <span>Create Wallet</span>
       <span class="emoji">🔑</span>
     </button>
+    <p id="newWalletInfo"></p>
   </div>
 
   <!-- Connect Wallet Section -->
@@ -23,6 +24,7 @@
       <span>Connect Wallet</span>
       <span class="emoji">🔗</span>
     </button>
+    <p id="walletAddress"></p>
   </div>
 
   <!-- Send ETH Section -->
@@ -34,6 +36,7 @@
       <span>Send</span>
       <span class="emoji">💸</span>
     </button>
+    <p id="sendStatus"></p>
   </div>
 
   <!-- Swap ETH to DAI Section -->
@@ -44,6 +47,7 @@
       <span>Swap</span>
       <span class="emoji">🔄</span>
     </button>
+    <p id="swapStatus"></p>
   </div>
 
   <!-- Manual Reload Button -->
@@ -54,6 +58,8 @@
     </button>
   </div>
 
+  <!-- Include Ethers.js from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
