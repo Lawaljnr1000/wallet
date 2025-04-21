@@ -54,8 +54,8 @@
 
   <!-- Ethers.js -->
   <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
-  <!-- WalletConnect v2 -->
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@2.0.0-beta.14/dist/umd/index.min.js"></script>
+  <!-- WalletConnect Web3Modal -->
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3modal@2.0.0-beta.14/dist/umd/index.min.js"></script>
 
   <script>
     let provider;
@@ -65,17 +65,27 @@
     const miningRatePerSecond = 0.00000000382; // ETH per second
     const monthlyCap = 0.0099; // ETH
 
+    // Initialize Web3Modal
+    const web3Modal = new window.Web3Modal.default({
+      projectId: "YOUR_PROJECT_ID", // Replace with your WalletConnect Project ID
+      themeMode: "dark",
+      themeVariables: {
+        "--w3m-accent-color": "#1abc9c",
+        "--w3m-background-color": "#0f2027"
+      },
+      chains: [
+        {
+          id: 1,
+          name: "Ethereum Mainnet",
+          rpcUrl: "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID" // Replace with your Infura Project ID
+        }
+      ]
+    });
+
     document.getElementById("connectWallet").addEventListener("click", async () => {
       try {
-        const walletConnectProvider = new WalletConnectProvider.default({
-          rpc: {
-            1: "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID" // Replace with your Infura Project ID
-          },
-          chainId: 1
-        });
-
-        await walletConnectProvider.enable();
-        provider = new ethers.providers.Web3Provider(walletConnectProvider);
+        const instance = await web3Modal.connect();
+        provider = new ethers.providers.Web3Provider(instance);
         signer = provider.getSigner();
         const address = await signer.getAddress();
         document.getElementById("walletInfo").innerHTML = `
