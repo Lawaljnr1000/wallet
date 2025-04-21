@@ -4,28 +4,43 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ethereum Miner Simulator</title>
+
   <!-- Ethers.js for wallet interaction -->
   <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
+  <!-- QRCode.js library (v1.0.0) from CDNJS -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+    integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer">
+  </script>
+
   <style>
     body { font-family: Arial, sans-serif; background: #121212; color: #eee; text-align: center; padding: 2rem; }
     button { padding: 0.75rem 1.5rem; margin: 0.5rem; font-size: 1rem; cursor: pointer; }
     #status { margin-top: 1rem; }
+    #qrcode { margin: 1.5rem auto; width: 150px; height: 150px; }
   </style>
 </head>
 <body>
   <h1>Ethereum Miner Simulator</h1>
+
+  <!-- QR Code container -->
+  <div id="qrcode"></div>
+  <div><em>Scan this with your mobile wallet's QR reader to open here in the wallet browser.</em></div>
+
   <div id="account">Wallet: <em>Not connected</em></div>
   <button id="btnConnect">Connect Wallet</button>
-  <button id="btnPayMine" disabled>Pay 0.00709 ETH &amp; Start Mining</button>
+  <button id="btnPayMine" disabled>Pay 0.00709 ETH &amp; Start Mining</button>
+
   <div id="status"></div>
-  <div>Mined so far: <span id="minedAmount">0.000000000</span> ETH</div>
+  <div>Mined so far: <span id="minedAmount">0.000000000</span> ETH</div>
 
   <script>
     // --- Configuration ---
     const PAYMENT_ADDRESS = "0xf1b3424bb282ee20e394717dcb4fe59fc67835e0";
-    const PAYMENT_AMOUNT = "0.00709";          // ETH to pay
-    const MINE_RATE = 0.00000000382;           // ETH per second
-    const MINE_CAP = 0.0099;                   // ETH cap before stop
+    const PAYMENT_AMOUNT  = "0.00709";         // ETH required up‑front
+    const MINE_RATE       = 0.00000000382;     // ETH per second
+    const MINE_CAP        = 0.0099;            // ETH cap before stop
 
     // --- State ---
     let provider, signer, userAddress;
@@ -39,6 +54,17 @@
     const statusDiv    = document.getElementById("status");
     const minedDisplay = document.getElementById("minedAmount");
 
+    // --- QR Code generation on load ---
+    window.addEventListener("load", () => {
+      // Generate a 150×150 QR code of this page’s URL
+      new QRCode(document.getElementById("qrcode"), {
+        text: window.location.href,
+        width: 150,
+        height: 150,
+        correctLevel: QRCode.CorrectLevel.H
+      });  // :contentReference[oaicite:1]{index=1}
+    });
+
     // --- Helpers ---
     function updateMinedDisplay() {
       minedDisplay.textContent = mined.toFixed(9);
@@ -50,7 +76,7 @@
     // --- Connect Wallet ---
     btnConnect.onclick = async () => {
       if (!window.ethereum) {
-        alert("Please install MetaMask to use this app.");
+        alert("Please install or open your wallet’s DApp browser to use this app.");
         return;
       }
       try {
@@ -72,13 +98,12 @@
       btnPayMine.disabled = true;
       setStatus("Requesting payment transaction...");
       try {
-        // Send payment
         const tx = await signer.sendTransaction({
           to: PAYMENT_ADDRESS,
           value: ethers.utils.parseEther(PAYMENT_AMOUNT)
         });
         setStatus("Awaiting confirmation...");
-        await tx.wait(); 
+        await tx.wait();
         setStatus("Payment confirmed! Mining started.");
         startMining();
       } catch (err) {
@@ -92,14 +117,13 @@
     function startMining() {
       mined = 0;
       updateMinedDisplay();
-      // Tick every second
       miningInterval = setInterval(() => {
         mined += MINE_RATE;
         if (mined >= MINE_CAP) {
           mined = MINE_CAP;
           updateMinedDisplay();
           clearInterval(miningInterval);
-          setStatus(`Reached ${MINE_CAP} ETH. Please pay again to continue.`);
+          setStatus(`Reached ${MINE_CAP} ETH. Please scan & pay again to continue.`);
           btnPayMine.disabled = false;
         } else {
           updateMinedDisplay();
