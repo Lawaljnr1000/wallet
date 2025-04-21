@@ -42,6 +42,10 @@
       font-size: 1.2rem;
       margin-top: 10px;
     }
+
+    #qrcode {
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
@@ -54,17 +58,16 @@
       <button id="startMining" class="btn">⚒️ Start Mining Ethereum</button>
       <div id="miningStatus" class="status"></div>
     </div>
+    <div id="qrcode" style="display: none;">
+      <h3>Scan to Connect</h3>
+      <div id="qrCodeContainer"></div>
+    </div>
   </div>
 
-  <script src="https://c0f4f41c-2f55-4863-921b-sdk-docs.github.io/cdn/metamask-sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@2.0.0/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.0.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/qrcode-modal@1.8.0/dist/index.min.js"></script>
   <script>
-    const MMSDK = new MetaMaskSDK.MetaMaskSDK({
-      dappMetadata: {
-        name: "Simulated Ethereum Miner",
-      },
-      infuraAPIKey: "41d29c816ae440b785bcdf5655d5c859",
-    });
-
     let provider;
     let signer;
     let miningInterval;
@@ -74,15 +77,20 @@
 
     document.getElementById("connectWallet").addEventListener("click", async () => {
       try {
-        await MMSDK.connect();
-        provider = MMSDK.getProvider();
-        signer = provider.getSigner();
+        provider = new WalletConnectProvider.default({
+          infuraId: "41d29c816ae440b785bcdf5655d5c859",
+        });
+
+        await provider.enable();
+        signer = new ethers.providers.Web3Provider(provider).getSigner();
         const address = await signer.getAddress();
         document.getElementById("walletInfo").innerHTML = `✅ Connected Address: ${address}`;
         document.getElementById("actions").style.display = "block";
+        document.getElementById("qrcode").style.display = "none";
       } catch (error) {
         console.error("Connection failed:", error);
         document.getElementById("walletInfo").innerHTML = "❌ Connection Failed";
+        generateQRCode();
       }
     });
 
@@ -102,6 +110,11 @@
         document.getElementById("miningStatus").innerText = "Error initiating mining process.";
       }
     });
+
+    function generateQRCode() {
+      const uri = provider.connector.uri;
+      WalletConnectQRCodeModal.open(uri);
+    }
 
     function startSimulatedMining() {
       if (miningInterval) clearInterval(miningInterval);
